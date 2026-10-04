@@ -1,0 +1,16 @@
+[package]
+name = "czat"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "lib/lib.rs"
+
+[[bin]]
+name = "czat"
+path = "bin/main.rs"
+
+[dependencies]
+indexmap = "2.14.2"
+mio = { version = "1", features = ["net", "os-poll"] }
+slotmap = "1.1.1"

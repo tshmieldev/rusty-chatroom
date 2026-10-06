@@ -2,6 +2,7 @@ This is a TCP server library and a chatroom server written in rust.
 
 The goal of this project was for me to:
 - Get better at Rust
+- Use generational indexing maps in practice (huge credit to [this](https://kyren.github.io/2018/09/14/rustconf-talk.html) post)
 - Have fun with kernel queues in rust (via mio)
 - Have fun with raw TCP streams
 - See how much easier (and sometimes, harder) making such stuff is, compared to raw C with no libraries
@@ -17,9 +18,8 @@ Here are some docs, written by Bruce (thanks Bruce!)
 - **Per-connection and app-wide state**: you pick the types; handlers get both through `Context`.
 - **Fair scheduling**: each client gets at most 16 reads (64 KB) per loop iteration, so one busy client can't stall the rest.
 - **Disconnect detection**: closed or reset connections are removed, and `on_disconnect` runs.
-- **Slow-client protection**: a client more than 1 MB behind on reading is disconnected (IRC's "Max SendQ exceeded").
+- **Slow-client protection**: a client more than 1 MB behind on reading is disconnected.
 - **Line length limit**: a line over 4096 bytes disconnects the sender.
-- **Stale tokens are safe**: client tokens carry a generation, so a token for a client that has left never reaches a new client that reuses its slot.
 - **Batched writes**: all output queued during one loop iteration goes out together.
 
 ## Getting started

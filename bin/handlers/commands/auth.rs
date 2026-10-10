@@ -24,6 +24,11 @@ pub fn login<'a>(ctx: &mut Context<Chat>, id: AccountId) -> Result<(), Option<Co
         .find("logged_in")
         .expect("logged_in group must exist.");
     ctx.app.add_user_to_group(id, gid)?;
+    ctx.app.set_user_active_group(id, gid)?;
+    let history = ctx.app.active_group_history(id)?;
+    if !history.is_empty() {
+        ctx.send_message(&history);
+    }
     Ok(())
 }
 

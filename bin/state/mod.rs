@@ -31,7 +31,7 @@ pub struct AppState {
     pub accounts: Accounts,
     pub groups: Groups,
     pub commands: Commands,
-    online: SecondaryMap<AccountId, Token>,
+    sessions: SecondaryMap<AccountId, Token>,
 }
 
 pub struct Chat;
@@ -44,21 +44,24 @@ impl Server for Chat {
 impl AppState {
     pub fn set_online(&mut self, conn: &mut ConnectionState, id: AccountId, token: Token) {
         conn.account = Some(id);
-        self.online.insert(id, token);
+        self.sessions.insert(id, token);
     }
     pub fn set_offline(&mut self, conn: &mut ConnectionState) -> Option<AccountId> {
         let id = conn.account.take()?;
-        self.online.remove(id);
+        self.sessions.remove(id);
         Some(id)
     }
     pub fn session(&self, id: AccountId) -> Option<Token> {
-        self.online.get(id).copied()
+        self.sessions.get(id).copied()
     }
     pub fn user_by_name(&self, username: &str) -> Option<AccountId> {
         self.accounts.find(username)
     }
     pub fn user(&self, user_id: AccountId) -> Option<&Account> {
         self.accounts.get(user_id)
+    }
+    pub fn user_mut(&mut self, user_id: AccountId) -> Option<&mut Account> {
+        self.accounts.get_mut(user_id)
     }
     pub fn group(&self, group_id: GroupId) -> Option<&Group> {
         self.groups.get(group_id)
@@ -77,6 +80,31 @@ impl AppState {
             .get_mut(user_id)
             .ok_or("User doesn't exist.")?;
         Ok(user.join_group(group_id) && group.add(user_id))
+    }
+    pub fn set_user_active_group(
+        &mut self,
+        user_id: AccountId,
+        group_id: GroupId,
+    ) -> Result<bool, Cow<'static, str>> {
+        let _ = self.groups.get(group_id).ok_or("Group doesn't exist.")?;
+        let user = self.user_mut(user_id).ok_or("User doesn't exist.")?;
+        user.set_active_group(group_id);
+
+        Ok(true)
+    }
+    pub fn active_group_history(&self, user_id: AccountId) -> Result<String, Cow<'static, str>> {
+        let user = self.user(user_id).ok_or("User doesn't exist.")?;
+        let group_id = user.active_group().ok_or("User has no active group.")?;
+        let group = self.group(group_id).expect("Group must exist.");
+
+        let mut text = String::new();
+        for entry in group.get_history() {
+            if !text.is_empty() {
+                text.push('\n');
+            }
+            text += &entry.message;
+        }
+        Ok(text)
     }
     pub fn remove_user_from_group(
         &mut self,

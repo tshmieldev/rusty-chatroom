@@ -10,6 +10,7 @@ pub struct Account {
     username: String,
     password: String,
     groups: BTreeSet<GroupId>,
+    active_group: Option<GroupId>,
     pub history: Vec<String>,
 }
 
@@ -20,11 +21,17 @@ impl Account {
     pub fn check_password(&self, password: &str) -> bool {
         self.password == password
     }
+    pub fn active_group(&self) -> Option<GroupId> {
+        self.active_group
+    }
     pub fn groups(&self) -> &BTreeSet<GroupId> {
         &self.groups
     }
     pub(in crate::state) fn join_group(&mut self, group_id: GroupId) -> bool {
         self.groups.insert(group_id)
+    }
+    pub(in crate::state) fn set_active_group(&mut self, group_id: GroupId) {
+        self.active_group = Some(group_id);
     }
     pub(in crate::state) fn exit_group(&mut self, group_id: GroupId) -> bool {
         self.groups.remove(&group_id)
@@ -46,6 +53,7 @@ impl Accounts {
             username: String::from(username),
             password: String::from(password),
             groups: BTreeSet::new(),
+            active_group: None,
             history: Vec::new(),
         });
         self.by_name.insert(String::from(username), id);

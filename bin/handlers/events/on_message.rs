@@ -22,8 +22,16 @@ pub fn on_message(ctx: &mut Context<Chat>, message: &str) {
         let user = ctx.app.accounts.get_mut(id).expect("User must exist");
 
         user.history.push(String::from(message));
+        let formatted_message = format!("[{}]: {}", user.username(), message);
 
-        let msg = format!("[{}]: {}", user.username(), message);
-        ctx.broadcast_excl(msg, HashSet::from([ctx.token()]));
+        if let Some(gid) = user.active_group() {
+            let g = ctx.app.groups.get_mut(gid).expect("Group must exist");
+            //TODO: when accounts are persistent, pass message
+            // and regenerate formatted message on demand
+            // with the actual username.
+            g.add_history_entry(id, &formatted_message);
+        }
+
+        ctx.broadcast_excl(formatted_message, HashSet::from([ctx.token()]));
     }
 }

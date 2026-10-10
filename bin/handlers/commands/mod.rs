@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod help;
 pub mod login;
 pub mod logout;
 pub mod msg;
@@ -7,6 +8,7 @@ pub mod users;
 mod util;
 pub mod whoami;
 
+pub use help::HELP;
 pub use login::LOGIN;
 pub use logout::LOGOUT;
 pub use msg::MSG;
@@ -14,6 +16,7 @@ pub use register::REGISTER;
 pub use users::USERS;
 pub use whoami::WHOAMI;
 
+use help::handle_help;
 use std::borrow::Cow;
 use std::cmp::min;
 use std::collections::BTreeMap;
@@ -52,10 +55,15 @@ impl Commands {
 pub fn handle_command(ctx: &mut Context<Chat>, message: &str) {
     let space_idx = message.find(' ').unwrap_or(message.len());
     let cmdname: &str = &message[1..space_idx];
-    let cmd = ctx.app.commands.get(cmdname);
+    let mut cmd = ctx.app.commands.get(cmdname);
     if cmd.is_none() {
-        ctx.send_message("Unknown command. Get some /help");
-        return;
+        // This if being here lets the main file override the help handler
+        if cmdname == "help" {
+            cmd = Some(handle_help);
+        } else {
+            ctx.send_message("Unknown command. Get some /help");
+            return;
+        }
     }
     if let Err(oe) = (cmd.unwrap())(ctx, &message[min(space_idx + 1, message.len())..]) {
         match oe {

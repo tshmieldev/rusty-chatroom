@@ -29,7 +29,9 @@ pub fn handle_msg<'a>(
         return Err(Some("User doesn't exist.".into()));
     };
 
-    let recipient_token = ctx.app.session(user_id).expect("User is not online.");
+    let Some(recipient_token) = ctx.app.session(user_id) else {
+        return Err(Some("User is not online.".into()));
+    };
 
     let mut msg = String::with_capacity(256);
     msg.push_str(&format!(

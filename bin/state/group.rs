@@ -1,4 +1,7 @@
-use std::collections::{BTreeSet, HashMap};
+use std::{
+    borrow::Cow,
+    collections::{BTreeSet, HashMap, VecDeque},
+};
 
 use slotmap::{SlotMap, new_key_type};
 
@@ -6,12 +9,22 @@ use crate::state::AccountId;
 
 new_key_type! { pub struct GroupId; }
 
+pub type History = VecDeque<HistoryEntry>;
+
+pub struct HistoryEntry {
+    pub user: AccountId,
+    pub message: Cow<'static, str>,
+}
+
 pub struct Group {
     name: String,
     users: BTreeSet<AccountId>,
+    history: History,
 }
 
 impl Group {
+    const MAX_HISTORY_LEN: usize = 32;
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -24,9 +37,20 @@ impl Group {
     pub fn remove(&mut self, user_id: AccountId) -> bool {
         self.users.remove(&user_id)
     }
-
     pub fn users(&self) -> impl Iterator<Item = AccountId> + '_ {
         self.users.iter().copied()
+    }
+    pub fn get_history(&self) -> &History {
+        &self.history
+    }
+    pub fn add_history_entry(&mut self, user_id: AccountId, message: &str) {
+        self.history.push_back(HistoryEntry {
+            user: user_id,
+            message: message.to_string().into(),
+        });
+        if self.history.len() > Self::MAX_HISTORY_LEN {
+            self.history.pop_front();
+        }
     }
 }
 
@@ -44,6 +68,7 @@ impl Groups {
         let id = self.store.insert(Group {
             name: String::from(name),
             users: BTreeSet::new(),
+            history: History::new(),
         });
         self.by_name.insert(String::from(name), id);
         Some(id)

@@ -2,8 +2,9 @@ use std::borrow::Cow;
 
 use czat::Context;
 
-use super::auth::{create_account, login};
 use super::Command;
+use super::auth::{create_account, login};
+use super::util::broadcast_to_others;
 use crate::state::Chat;
 
 pub const REGISTER: Command = Command {
@@ -38,7 +39,10 @@ pub fn handle_register<'a>(
     }
 
     let id = create_account(ctx, username, password)?;
-    login(ctx, id);
+    login(ctx, id)?;
+
+    broadcast_to_others(ctx, format!("{} has joined.", username));
+    ctx.send_message("Registered. You are logged in.");
 
     Ok(())
 }

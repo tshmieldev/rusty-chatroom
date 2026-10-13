@@ -16,6 +16,7 @@ pub const HELP: Command = Command {
 // todo - /help <command>? description and long description?
 pub fn handle_help<'a>(ctx: &mut Context<Chat>, _: &'a str) -> Result<(), Option<Cow<'a, str>>> {
     let mut msg = String::with_capacity(256);
+    msg += ":::Rusty Chatroom:::\n";
     for &command in ctx.app.commands.by_name.values() {
         msg += &format!("/{}: {}\n", command.name, command.description);
     }

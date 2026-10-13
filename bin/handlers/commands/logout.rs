@@ -14,6 +14,10 @@ pub const LOGOUT: Command = Command {
 };
 
 pub fn handle_logout<'a>(ctx: &mut Context<Chat>, _: &'a str) -> Result<(), Option<Cow<'a, str>>> {
-    require_auth(ctx)?;
+    let user = require_auth(ctx)?;
+    ctx.broadcast(format!(
+        "{} has left.",
+        ctx.app.user(user).unwrap().username()
+    ));
     logout(ctx)
 }

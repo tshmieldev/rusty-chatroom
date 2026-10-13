@@ -51,7 +51,7 @@ pub struct App<S: Server> {
     clients: SlotMap<ClientKey, Client<S::ConnState>>,
     handlers: Handlers<S>,
     app_state: S::AppState,
-    queues: Queues,
+    queues: Queues<S::ConnState>,
     _listener: TcpListener,
 }
 
@@ -231,6 +231,20 @@ impl<S: Server> App<S> {
                     Operation::Broadcast(message) => {
                         for (_, client) in self.clients.iter_mut() {
                             self.queues.send(&mut client.conn, &message);
+                        }
+                    }
+                    Operation::BroadcastWhere(message, filter) => {
+                        for (_, client) in self.clients.iter_mut() {
+                            if filter(client.conn.token(), &client.state) {
+                                self.queues.send(&mut client.conn, &message);
+                            }
+                        }
+                    }
+                    Operation::BroadcastTo(message, include) => {
+                        for (_, client) in self.clients.iter_mut() {
+                            if include.contains(&client.conn.token()) {
+                                self.queues.send(&mut client.conn, &message);
+                            }
                         }
                     }
                     Operation::BroadcastExcl(message, exclude) => {

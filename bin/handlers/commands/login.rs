@@ -4,6 +4,7 @@ use czat::Context;
 
 use super::Command;
 use super::auth::login;
+use super::util::broadcast_to_others;
 use crate::state::Chat;
 
 pub const LOGIN: Command = Command {
@@ -43,7 +44,7 @@ pub fn handle_login<'a>(
     }
 
     login(ctx, id)?;
-
+    broadcast_to_others(ctx, format!("{} has joined.", username));
     ctx.send_message("Logged in successfully.");
 
     Ok(())

@@ -5,21 +5,21 @@ use crate::connection::{Connection, Queued};
 use crate::operation::Operation;
 
 #[derive(Default)]
-pub(crate) struct Queues {
-    operations: Vec<Operation>,
+pub(crate) struct Queues<C> {
+    operations: Vec<Operation<C>>,
     pending_writes: Vec<Token>,
     pending_reads: IndexSet<Token>,
     batch: Vec<Token>,
 }
 
-impl Queues {
-    pub(crate) fn push(&mut self, operation: Operation) {
+impl<C> Queues<C> {
+    pub(crate) fn push(&mut self, operation: Operation<C>) {
         self.operations.push(operation);
     }
     pub(crate) fn has_operations(&self) -> bool {
         !self.operations.is_empty()
     }
-    pub(crate) fn take_operations(&mut self) -> Vec<Operation> {
+    pub(crate) fn take_operations(&mut self) -> Vec<Operation<C>> {
         std::mem::take(&mut self.operations)
     }
 

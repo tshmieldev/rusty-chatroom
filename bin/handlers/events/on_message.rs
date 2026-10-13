@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use czat::Context;
+use mio::Token;
 
 use crate::handlers::commands::handle_command;
 use crate::state::Chat;
@@ -19,19 +18,36 @@ pub fn on_message(ctx: &mut Context<Chat>, message: &str) {
     }
 
     if let Some(id) = ctx.state.account() {
+        let user_token = ctx.token();
         let user = ctx.app.accounts.get_mut(id).expect("User must exist");
 
         user.history.push(String::from(message));
         let formatted_message = format!("[{}]: {}", user.username(), message);
 
-        if let Some(gid) = user.active_group() {
-            let g = ctx.app.groups.get_mut(gid).expect("Group must exist");
-            //TODO: when accounts are persistent, pass message
-            // and regenerate formatted message on demand
-            // with the actual username.
-            g.add_history_entry(id, &formatted_message);
-        }
+        let Some(gid) = user.active_group() else {
+            return;
+        };
 
-        ctx.broadcast_excl(formatted_message, HashSet::from([ctx.token()]));
+        //TODO: when accounts are persistent, pass message
+        // and regenerate formatted message on demand
+        // with the actual username.
+        ctx.app
+            .groups
+            .get_mut(gid)
+            .expect("Group must exist")
+            .add_history_entry(id, &formatted_message);
+
+        let recipients: Vec<Token> = ctx
+            .app
+            .groups
+            .get(gid)
+            .expect("Group must exist")
+            .users()
+            .filter_map(|u| ctx.app.session(u))
+            .collect();
+
+        for token in recipients {
+            ctx.send_to(token, formatted_message.clone());
+        }
     }
 }
